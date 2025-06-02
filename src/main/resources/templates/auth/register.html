@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar Akun Kesehatan</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+
+<body>
+    <div class="container">
+        <h2>Daftar Akun Kesehatan Baru</h2>
+        <form id="registerForm">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required>
+
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+
+            <button type="submit">Daftar</button>
+        </form>
+        <div id="message" class="message"></div>
+        <div class="link">Sudah punya akun? <a th:href="@{/login}">Login di sini</a></div>
+    </div>
+
+    <script th:inline="javascript">
+        // JavaScript ini akan tetap di sisi klien, karena ini adalah SPA style auth
+        document.getElementById('registerForm').addEventListener('submit', async function (event) {
+            event.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const messageDiv = document.getElementById('message');
+
+            try {
+                const response = await fetch('/api/register', { // URL relatif ke /api/register
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    messageDiv.className = 'message success';
+                    messageDiv.textContent = data.message;
+                    setTimeout(() => {
+                        window.location.href = '/login'; // Redirect ke halaman login Thymeleaf
+                    }, 2000);
+                } else {
+                    messageDiv.className = 'message';
+                    messageDiv.textContent = data.message || 'Registrasi gagal.';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                messageDiv.className = 'message';
+                messageDiv.textContent = 'Network error or server unavailable.';
+            }
+        });
+    </script>
+</body>
+
+</html>
