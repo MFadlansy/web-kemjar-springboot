@@ -1,6 +1,12 @@
 package com.example.healthapp.model;
 
-import jakarta.persistence.*; 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "users")
@@ -16,11 +22,11 @@ public class User {
     private String password; // Password hash
 
     @Lob // Untuk menyimpan teks panjang
-    @Column(name = "aes_key", nullable = false)
+    @Column(name = "aes_key", nullable = false, columnDefinition = "LONGTEXT") // Tambahkan columnDefinition
     private String aesKey; // AES key terenkripsi dengan public RSA key
 
     @Lob // Untuk menyimpan teks panjang
-    @Column(name = "private_rsa_key", nullable = false)
+    @Column(name = "private_rsa_key", nullable = false, columnDefinition = "LONGTEXT") // Tambahkan columnDefinition
     private String privateRsaKey; // Private RSA key pengguna
 
     // Constructors

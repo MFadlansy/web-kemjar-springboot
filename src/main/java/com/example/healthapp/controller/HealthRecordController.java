@@ -1,20 +1,27 @@
 package com.example.healthapp.controller;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.example.healthapp.dto.HealthRecordRequest;
 import com.example.healthapp.dto.HealthRecordResponse;
 import com.example.healthapp.model.HealthRecord;
 import com.example.healthapp.model.User;
 import com.example.healthapp.service.HealthRecordService;
 import com.example.healthapp.service.UserService;
-import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api")
@@ -29,17 +36,18 @@ public class HealthRecordController {
     }
 
     @PostMapping("/health-records")
+    // Hapus @RequestHeader("X-AES-Key") String aesKeyHex
     public ResponseEntity<?> addHealthRecord(@AuthenticationPrincipal UserDetails userDetails,
-                                             @Valid @RequestBody HealthRecordRequest request,
-                                             @RequestHeader("X-AES-Key") String aesKeyHex) { // Menerima AES key dari header
+                                             @Valid @RequestBody HealthRecordRequest request) {
         try {
             User currentUser = userService.findByUsername(userDetails.getUsername());
             if (currentUser == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Pengguna tidak ditemukan.");
             }
 
+            // Panggil saveHealthRecord tanpa aesKeyHex, service akan mengurus enkripsi
             HealthRecord savedRecord = healthRecordService.saveHealthRecord(
-                    currentUser, request.getRecordDate(), request.getRecordType(), request.getDetails(), aesKeyHex
+                    currentUser, request.getRecordDate(), request.getRecordType(), request.getDetails()
             );
             return ResponseEntity.status(HttpStatus.CREATED).body("Catatan kesehatan berhasil ditambahkan.");
         } catch (Exception e) {

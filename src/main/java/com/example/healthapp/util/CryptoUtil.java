@@ -6,11 +6,13 @@ import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
 
 @Component
@@ -114,4 +116,11 @@ public class CryptoUtil {
         }
         return data;
     }
+
+    public PrivateKey getPrivateKeyFromBytes(byte[] privateKeyBytes) throws Exception {
+        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
+        KeyFactory keyFactory = KeyFactory.getInstance(RSA_ALGORITHM);
+        return keyFactory.generatePrivate(keySpec);
+    }
+
 }

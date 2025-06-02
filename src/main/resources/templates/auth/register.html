@@ -25,18 +25,27 @@
     </div>
 
     <script th:inline="javascript">
-        // JavaScript ini akan tetap di sisi klien, karena ini adalah SPA style auth
+        // Fungsi untuk membaca cookie XSRF-TOKEN
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+
         document.getElementById('registerForm').addEventListener('submit', async function (event) {
             event.preventDefault();
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             const messageDiv = document.getElementById('message');
 
+            const csrfToken = getCookie('XSRF-TOKEN'); // Ambil token CSRF
+
             try {
-                const response = await fetch('/api/register', { // URL relatif ke /api/register
+                const response = await fetch('/api/register', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-XSRF-TOKEN': csrfToken // Tambahkan header X-XSRF-TOKEN
                     },
                     body: JSON.stringify({ username, password })
                 });
@@ -47,7 +56,7 @@
                     messageDiv.className = 'message success';
                     messageDiv.textContent = data.message;
                     setTimeout(() => {
-                        window.location.href = '/login'; // Redirect ke halaman login Thymeleaf
+                        window.location.href = '/login';
                     }, 2000);
                 } else {
                     messageDiv.className = 'message';

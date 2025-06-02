@@ -20,7 +20,7 @@ import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity // Untuk @PreAuthorize pada metode controller
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
@@ -38,7 +38,7 @@ public class SecurityConfig {
 
     @Bean
     public UserDetailsService userDetailsService() {
-        return userDetailsService; // Menggunakan implementasi kustom kita
+        return userDetailsService;
     }
 
     @Bean
@@ -48,24 +48,24 @@ public class SecurityConfig {
 
         http
             .csrf(csrf -> csrf
-                .csrfTokenRepository(CookieCsrfTokenRepository.with
-                )
+                .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                 .csrfTokenRequestHandler(requestHandler)
             )
             .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/api/register", "/api/login", "/").permitAll() // Izinkan akses ke register, login, dan root
-                .requestMatchers("/js/**", "/css/**", "/images/**").permitAll() // Izinkan akses ke file statis
-                .anyRequest().authenticated() // Semua request lain memerlukan otentikasi
+                // Order is important here!  More specific paths should come first.
+                .requestMatchers("/js/**", "/css/**", "/images/**", "/favicon.ico").permitAll()
+                .requestMatchers("/", "/login", "/register", "/dashboard", "/profile").permitAll() // Added /dashboard and /profile here
+                .requestMatchers("/api/register", "/api/login").permitAll()
+                .anyRequest().authenticated()
             )
             .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // Menggunakan JWT, jadi sesi stateless
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-            .headers(headers -> headers // Konfigurasi header keamanan
-                .xssProtection(xss -> xss.headerValue("block")) // XSS Protection
-                .contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'")) // Contoh CSP
-                .frameOptions(frameOptions -> frameOptions.deny()) // Clickjacking protection
+            .headers(headers -> headers
+                .contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"))
+                .frameOptions(frameOptions -> frameOptions.deny())
             );
 
         return http.build();

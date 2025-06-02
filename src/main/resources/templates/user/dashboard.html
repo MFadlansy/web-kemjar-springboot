@@ -108,7 +108,7 @@
             );
         }
 
-        // Fungsi enkripsi di frontend menggunakan Web Crypto API
+        // Fungsi enkripsi di frontend menggunakan Web Crypto API (TIDAK DIGUNAKAN LAGI UNTUK MENYIMPAN)
         async function encryptData(data, aesCryptoKey) {
             if (!aesCryptoKey) throw new Error('AES key not loaded for encryption.');
             const iv = crypto.getRandomValues(new Uint8Array(16)); // 16 bytes IV
@@ -121,7 +121,7 @@
             return arrayBufferToHex(iv) + ':' + arrayBufferToHex(encryptedBuffer);
         }
 
-        // Fungsi dekripsi di frontend menggunakan Web Crypto API
+        // Fungsi dekripsi di frontend menggunakan Web Crypto API (TETAP DIGUNAKAN)
         async function decryptData(encryptedData, aesCryptoKey) {
             if (!aesCryptoKey) throw new Error('AES key not loaded for decryption.');
             if (typeof encryptedData !== 'string' || !encryptedData.includes(':')) {
@@ -149,11 +149,18 @@
             }
         }
 
+        // Fungsi untuk membaca cookie XSRF-TOKEN
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+
         // Event Listener untuk tombol logout
         document.getElementById('logoutButton').addEventListener('click', () => {
             localStorage.removeItem('jwt_token');
             localStorage.removeItem('user_id');
-            localStorage.removeItem('aes_key');
+            localStorage.removeItem('aes_key'); // Hapus juga AES key dari lokal storage
             window.location.href = '/login';
         });
 
@@ -194,29 +201,25 @@
             event.preventDefault();
             const recordDate = document.getElementById('recordDate').value;
             const recordType = document.getElementById('recordType').value;
-            const details = document.getElementById('details').value;
+            const details = document.getElementById('details').value; // Ambil detail mentah (belum terenkripsi)
             const addRecordMessageDiv = document.getElementById('addRecordMessage');
 
-            if (!currentAesCryptoKey) {
-                addRecordMessageDiv.className = 'message';
-                addRecordMessageDiv.textContent = 'Silakan masukkan kode AES Anda terlebih dahulu untuk bisa menyimpan catatan.';
-                return;
-            }
+            const csrfToken = getCookie('XSRF-TOKEN'); // Ambil token CSRF
 
             try {
-                const encryptedDetails = await encryptData(details, currentAesCryptoKey);
-
-                const response = await fetch('/api/health-records', { // URL relatif
+                // KIRIM DETAIL MENTAH KE BACKEND, BACKEND YANG AKAN MENGENKRIPSI
+                const response = await fetch('/api/health-records', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${jwtToken}`, // Kirim JWT token
-                        'X-AES-Key': localStorage.getItem('aes_key') // Kirim AES key dari localStorage ke backend
+                        // 'X-AES-Key': localStorage.getItem('aes_key'), // Hapus, tidak lagi digunakan untuk enkripsi di backend
+                        'X-XSRF-TOKEN': csrfToken // Tambahkan header X-XSRF-TOKEN
                     },
                     body: JSON.stringify({
                         record_date: recordDate,
                         record_type: recordType,
-                        details: encryptedDetails
+                        details: details // KIRIM DETAIL MENTAH DI SINI
                     })
                 });
 
@@ -226,7 +229,8 @@
                     addRecordMessageDiv.className = 'message success';
                     addRecordMessageDiv.textContent = data.message;
                     document.getElementById('addRecordForm').reset();
-                    fetchHealthRecords(currentAesCryptoKey);
+                    // Tidak perlu memuat ulang catatan jika tidak memasukkan kode AES
+                    // fetchHealthRecords(currentAesCryptoKey); // Mungkin tidak perlu dipanggil jika AES key belum diisi
                 } else {
                     addRecordMessageDiv.className = 'message';
                     addRecordMessageDiv.textContent = data.message || 'Gagal menambahkan catatan.';
@@ -269,6 +273,7 @@
                         for (const record of records) {
                             const recordItem = document.createElement('div');
                             recordItem.className = 'record-item';
+                            // DEKRIPSI TETAP DILAKUKAN DI FRONTEND DENGAN KODE AES YANG DIMASUKKAN
                             const decryptedDetails = await decryptData(record.details, aesCryptoKey);
                             recordItem.innerHTML = `
                                 <p><strong>Tanggal:</strong> ${record.record_date}</p>

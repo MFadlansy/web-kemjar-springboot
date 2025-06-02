@@ -1,8 +1,19 @@
 package com.example.healthapp.model;
 
-import jakarta.persistence.*; // Menggunakan jakarta.persistence
-import java.time.LocalDate;
+import java.time.LocalDate; // Menggunakan jakarta.persistence
 import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "health_records")
@@ -22,7 +33,7 @@ public class HealthRecord {
     private String recordType;
 
     @Lob // Untuk menyimpan teks panjang
-    @Column(name = "encrypted_details", nullable = false)
+    @Column(name = "encrypted_details", nullable = false, columnDefinition = "LONGTEXT") // Tambahkan columnDefinition
     private String encryptedDetails; // Data sensitif terenkripsi
 
     @Column(name = "created_at", nullable = false, updatable = false)

@@ -25,17 +25,27 @@
     </div>
 
     <script th:inline="javascript">
+        // Fungsi untuk membaca cookie XSRF-TOKEN
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+
         document.getElementById('loginForm').addEventListener('submit', async function (event) {
             event.preventDefault();
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             const messageDiv = document.getElementById('message');
 
+            const csrfToken = getCookie('XSRF-TOKEN'); // Ambil token CSRF
+
             try {
-                const response = await fetch('/api/login', { // URL relatif ke /api/login
+                const response = await fetch('/api/login', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-XSRF-TOKEN': csrfToken // Tambahkan header X-XSRF-TOKEN
                     },
                     body: JSON.stringify({ username, password })
                 });
@@ -45,13 +55,12 @@
                 if (response.ok) {
                     messageDiv.className = 'message success';
                     messageDiv.textContent = data.message;
-                    // Simpan JWT token, user_id, dan decrypted_aes_key di localStorage
-                    localStorage.setItem('jwt_token', data.token); // Ganti 'token' dengan 'jwt_token'
+                    localStorage.setItem('jwt_token', data.token);
                     localStorage.setItem('user_id', data.userId);
-                    localStorage.setItem('aes_key', data.decryptedAesKey); // aesKey akan dikirim dari backend
+                    localStorage.setItem('aes_key', data.decryptedAesKey);
 
                     setTimeout(() => {
-                        window.location.href = '/dashboard'; // Redirect ke halaman dashboard Thymeleaf
+                        window.location.href = '/dashboard';
                     }, 1000);
                 } else {
                     messageDiv.className = 'message';

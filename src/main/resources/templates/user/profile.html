@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profil Pengguna</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+
+<body>
+    <div class="header">
+        <h1>Profil Pengguna</h1>
+        <div class="nav-links">
+            <a th:href="@{/dashboard}">Dashboard Kesehatan</a>
+            <button id="logoutButton" class="logout-button">Logout</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card profile-card">
+            <h3>Detail Profil Anda</h3>
+            <p><strong>Username:</strong> <span id="profileUsername">Memuat...</span></p>
+            <p><strong>Kode AES Anda:</strong></p>
+            <textarea id="profileAesKey" rows="3" readonly
+                placeholder="Kode AES Anda akan muncul di sini..."></textarea>
+            <button onclick="copyAesKey()" class="copy-button">Salin Kode AES</button>
+            <div id="profileMessage" class="message"></div>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        const jwtToken = localStorage.getItem('jwt_token'); // Ambil JWT token
+        const userId = localStorage.getItem('user_id');
+
+        if (!jwtToken || !userId) {
+            window.location.href = '/login'; // Redirect ke halaman login Thymeleaf jika tidak ada token
+        }
+
+        // Fungsi untuk membaca cookie (tidak terlalu dibutuhkan untuk GET, tapi konsisten)
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+
+        // Event Listener untuk tombol logout
+        document.getElementById('logoutButton').addEventListener('click', () => {
+            localStorage.removeItem('jwt_token');
+            localStorage.removeItem('user_id');
+            localStorage.removeItem('aes_key'); // Hapus juga AES key dari lokal storage
+            window.location.href = '/login';
+        });
+
+        // Fungsi untuk mengambil dan menampilkan profil pengguna
+        async function fetchUserProfile() {
+            const profileUsernameSpan = document.getElementById('profileUsername');
+            const profileAesKeyTextarea = document.getElementById('profileAesKey');
+            const profileMessageDiv = document.getElementById('profileMessage');
+
+            profileUsernameSpan.textContent = 'Memuat...';
+            profileAesKeyTextarea.value = 'Memuat...';
+            profileMessageDiv.textContent = '';
+
+            try {
+                const response = await fetch('/api/profile', { // Menggunakan API /api/profile
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${jwtToken}` // Kirim JWT token
+                    }
+                });
+
+                const data = await response.json(); // Data akan berisi username dan aesKey
+
+                if (response.ok) {
+                    profileUsernameSpan.textContent = data.username;
+                    profileAesKeyTextarea.value = data.aesKey; // Menampilkan kode AES yang didekripsi
+                    profileMessageDiv.className = 'message success';
+                    profileMessageDiv.textContent = 'Profil berhasil dimuat.';
+                } else {
+                    profileUsernameSpan.textContent = 'Gagal memuat';
+                    profileAesKeyTextarea.value = 'Gagal memuat';
+                    profileMessageDiv.className = 'message';
+                    profileMessageDiv.textContent = data.message || 'Gagal memuat profil.';
+                }
+            } catch (error) {
+                console.error('Error fetching user profile:', error);
+                profileUsernameSpan.textContent = 'Error';
+                profileAesKeyTextarea.value = 'Error';
+                profileMessageDiv.className = 'message';
+                profileMessageDiv.textContent = 'Kesalahan jaringan atau server tidak tersedia.';
+            }
+        }
+
+        // Fungsi untuk menyalin kode AES ke clipboard
+        function copyAesKey() {
+            const aesKeyTextarea = document.getElementById('profileAesKey');
+            aesKeyTextarea.select();
+            aesKeyTextarea.setSelectionRange(0, 99999); // Untuk perangkat seluler
+            document.execCommand('copy');
+            alert('Kode AES disalin ke clipboard!');
+        }
+
+
+        // Panggil fungsi saat halaman dimuat
+        document.addEventListener('DOMContentLoaded', fetchUserProfile);
+    </script>
+</body>
+
+</html>
